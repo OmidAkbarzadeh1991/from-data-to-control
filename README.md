@@ -36,7 +36,7 @@ Add the following packages to your MATLAB path:
 - **SOSTOOLS** 4.03
 - **MOSEK** 10.2.3
 
-(`Spacecraft_Star_Simulation.m` additionally requires the **Symbolic Math Toolbox**; `Lorenz_Fully_Simulation.m` and `Complexity_Comparison.m` need only base MATLAB.)
+(`Spacecraft_Star_Simulation.m`, `Lorenz_Fully_Simulation.m`, and `Complexity_Comparison.m` need only base MATLAB.)
 
 ### Setup steps
 1. Download
@@ -46,20 +46,7 @@ Add the following packages to your MATLAB path:
 3. In MATLAB, open **Set Path… → Add with Subfolders…** and add the extracted folders.
 4. Save the updated path and restart MATLAB (optional but recommended).
 
-> **Note** Both packages **must** be on the MATLAB path before running any of the provided scripts.
->
-> **Remark**
-> If you are using a fresh installation of **MATLAB**, you must also install the **Symbolic Math Toolbox**.
-
-### How to install the Symbolic Math Toolbox
-
-1. **Open MATLAB**.
-2. Navigate to the **Home** tab.
-3. Select **Add-Ons → Get Add-Ons**.
-4. In the **Add-On Explorer**, search for **"Symbolic Math Toolbox"**.
-5. Click the toolbox entry and choose **Install**.
-6. Follow the on-screen prompts; MATLAB will handle the download and installation.
-7. After installation, run `ver` in the Command Window to verify that the toolbox is listed.
+> **Note** Both packages **must** be on the MATLAB path before running `Spacecraft_Star_Network.m`, `Lorenz_Fully_Network.m`, or `Signed_Lorenz_Comparison.m`.
 
 ### MATLAB Path Instructions
 
