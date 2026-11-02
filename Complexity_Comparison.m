@@ -4,7 +4,7 @@ close all
 
 numStatesLocal    = 3;
 horizonLocal      = 17;
-degreeHi          = 2;
+degreeHi          = 1;
 numThetaRowsLocal = 9;
 epsi              = 1e-8;
 
@@ -32,7 +32,9 @@ numStatesTotal    = Nvals * numStatesLocal;
 horizonTotal      = Nvals * horizonLocal;
 numThetaRowsTotal = Nvals * numThetaRowsLocal;
 
-if degreeHi == 2
+if degreeHi == 1
+    numMonomialsTotal = numStatesTotal + 1;
+elseif degreeHi == 2
     numMonomialsTotal = (numStatesTotal + 2) .* (numStatesTotal + 1) / 2;
 else
     numMonomialsTotal = arrayfun(@(nn) nchoosek(nn + degreeHi, degreeHi), ...
@@ -53,21 +55,28 @@ C_mono = numDecisionVarsMono .* (2*numStatesTotal + horizonTotal).^2 ...
           + numStatesTotal .* (numStatesTotal + 1)/2) ...
          .* (numThetaRowsTotal .* numStatesTotal .* numMonomialsTotal);
 
-plot_comparison(Nvals, C_comp, C_mono, ...
+figC = plot_comparison(Nvals, C_comp, C_mono, ...
     '$\mathcal{C}_{\mathrm{comp}}$', '$\mathcal{C}_{\mathrm{mono}}$');
+print(figC, '-depsc', 'CC.eps');
 
-plot_comparison(Nvals, J_comp, J_mono, ...
+figJ = plot_comparison(Nvals, J_comp, J_mono, ...
     '$\mathcal{J}_{\mathrm{comp}}$', '$\mathcal{J}_{\mathrm{mono}}$');
+print(figJ, '-depsc', 'TC.eps');
 
-function plot_comparison(Nvals, yComp, yMono, legComp, legMono)
-    figure
-    hold on; grid on; box on;
-    loglog(Nvals, yComp, 'LineWidth', 2);
+function fig = plot_comparison(Nvals, yComp, yMono, legComp, legMono)
+    fig = figure('Units', 'inches', 'Position', [1 1 2.4 2.0], ...
+                 'PaperPositionMode', 'auto');
+    tiledlayout(1, 1, 'Padding', 'compact', 'TileSpacing', 'compact');
+    ax = nexttile;
+    hold(ax, 'on'); grid(ax, 'on'); box(ax, 'on');
+    loglog(ax, Nvals, yComp, 'LineWidth', 2);
     valid = isfinite(yMono) & (yMono > 0);
-    loglog(Nvals(valid), yMono(valid), 'LineWidth', 2);
-    set(gca, 'TickLabelInterpreter', 'latex', 'XScale', 'log', 'YScale', 'log');
-    xlabel('Number of Subsystems', 'Interpreter', 'latex');
-    ylabel('Computational Cost', 'Interpreter', 'latex');
-    legend({legComp, legMono}, 'Location', 'northwest', 'Interpreter', 'latex');
-    xlim([1 2000]);
+    loglog(ax, Nvals(valid), yMono(valid), 'LineWidth', 2);
+    set(ax, 'FontSize', 11, 'TickLabelInterpreter', 'latex', ...
+        'XScale', 'log', 'YScale', 'log');
+    xlabel(ax, 'Number of Subsystems', 'Interpreter', 'latex', 'FontSize', 12);
+    ylabel(ax, 'Computational Cost', 'Interpreter', 'latex', 'FontSize', 12);
+    lgd = legend(ax, {legComp, legMono}, 'Location', 'northwest', 'Interpreter', 'latex');
+    lgd.FontSize = 10;
+    xlim(ax, [1 2000]);
 end
