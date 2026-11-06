@@ -8,8 +8,8 @@ From a **single noisy input–state trajectory** of one representative subsystem
 
 ## Contents
 
-- `Spacecraft_Star_Network.m`
-- `Spacecraft_Star_Simulation.m`
+- `Spacecraft_Fully_Network.m`
+- `Spacecraft_Fully_Simulation.m`
 - `Lorenz_Fully_Network.m`
 - `Lorenz_Fully_Simulation.m`
 - `Complexity_Comparison.m`
@@ -36,7 +36,7 @@ Add the following packages to your MATLAB path:
 - **SOSTOOLS** 4.03
 - **MOSEK** 10.2.3
 
-(`Spacecraft_Star_Simulation.m`, `Lorenz_Fully_Simulation.m`, and `Complexity_Comparison.m` need only base MATLAB.)
+(`Spacecraft_Fully_Simulation.m`, `Lorenz_Fully_Simulation.m`, and `Complexity_Comparison.m` need only base MATLAB.)
 
 ### Setup steps
 1. Download
@@ -46,7 +46,7 @@ Add the following packages to your MATLAB path:
 3. In MATLAB, open **Set Path… → Add with Subfolders…** and add the extracted folders.
 4. Save the updated path and restart MATLAB (optional but recommended).
 
-> **Note** Both packages **must** be on the MATLAB path before running `Spacecraft_Star_Network.m`, `Lorenz_Fully_Network.m`, or `Signed_Lorenz_Comparison.m`.
+> **Note** Both packages **must** be on the MATLAB path before running `Spacecraft_Fully_Network.m`, `Lorenz_Fully_Network.m`, or `Signed_Lorenz_Comparison.m`.
 
 ### MATLAB Path Instructions
 
@@ -96,7 +96,7 @@ To regenerate the results presented in the paper:
 4. **Run** the script by name in the Command Window, e.g.:
 
    ```matlab
-   Spacecraft_Star_Network
+   Spacecraft_Fully_Network
    ```
 
 ## Reproducibility
