@@ -20,7 +20,7 @@ From a **single noisy input–state trajectory** of one representative subsystem
 Our simulations were executed in **MATLAB R2023b** on a **MacBook M2** with **32 GB RAM**.
 The **RT** and **MU** values reported in the paper refer only to the synthesis scripts (`*_Network.m`). In contrast, the network simulation scripts (`*_Simulation.m`) for generating the corresponding figures may take **considerably longer** to finish, depending on the number of subsystems and the available computational resources.
 
-> **Note** The reported **running times (RT)** and **memory usage (MU)** correspond to the time and memory needed to solve the SOS problems for each subsystem, as detailed in **Algorithm 1** of the paper; they are measured before any network-level matrix is formed.
+> **Note** The reported **running times (RT)** and **memory usage (MU)** correspond to the time and memory needed to collect the data and solve the SOS program for the CSC and local controller of one subsystem (the first SOS step of **Algorithm 1** in the paper); they are measured before the level-set program runs and before any network-level matrix is formed.
 >
 > **Note on memory units**
 > MATLAB's `whos` reports usage in **bytes**. For clarity, the scripts convert these values to **megabytes (MB)** before printing them.
