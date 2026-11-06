@@ -30,7 +30,9 @@ A = [zeros(3, 3), A];
 
 B = blkdiag(1/j1, 1/j2, 1/j3);
 
-D = B;
+D_paper = 0.02 * B;
+kappa   = 0.02;
+D       = D_paper / kappa;
 
 Matrix_D = D;
 
@@ -182,24 +184,7 @@ x12 = barx21.' * P;
 x21 = x12.';
 x22 = P * barx22 * P;
 
-lam_fun = @(g) max(eig(g^2 * (number_subsystems - 1)^2 * x11 + x22));
-
-g_lo = 0; g_hi = 1;
-while lam_fun(g_hi) < 0, g_hi = 2 * g_hi; end
-for it = 1:60
-    g_mid = (g_lo + g_hi) / 2;
-    if lam_fun(g_mid) < 0, g_lo = g_mid; else, g_hi = g_mid; end
-end
-g_max = g_lo;
-
-scale         = 10^(floor(log10(g_max)) - 1);
-coupling_gain = floor(g_max / scale) * scale;
-
-fprintf('\nMaximal admissible coupling gain g_max = %.6f\n', g_max);
-fprintf('Selected coupling gain             g     = %.4f\n', coupling_gain);
-
-connection = kron(coupling_gain * (ones(number_subsystems) - eye(number_subsystems)), ...
-                  eye(n_i));
+connection = kron(ones(number_subsystems) - eye(number_subsystems), kappa * eye(n_i));
 
 X1A = kron(eye(number_subsystems), x11);
 X2A = kron(eye(number_subsystems), x12);
