@@ -31,8 +31,9 @@ A = [-sigma, sigma,  0,  0, 0;
 
 B = eye(3);
 
-D_coeff = 1;
-D = -D_coeff * eye(3);
+D_paper = -1e-5 * eye(3);
+kappa   = 1e-5;
+D       = D_paper / kappa;
 
 states    = initial.';
 statesdot = [];
@@ -187,7 +188,7 @@ fprintf('Per-subsystem memory  MU = %.2f MB\n', MU_bytes / 1e6);
 n_i = 3;
 Nn  = Subsystems * n_i;
 
-connection = kron(ones(Subsystems) - eye(Subsystems), 1e-5 * eye(n_i));
+connection = kron(ones(Subsystems) - eye(Subsystems), kappa * eye(n_i));
 
 x11 = barx11;
 x12 = barx21.' * P;
