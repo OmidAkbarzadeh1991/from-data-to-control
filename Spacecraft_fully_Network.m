@@ -11,11 +11,10 @@ tic
 X_bound   = [-5 5; -5 5; -5 5];
 X0_bound  = 2 * [-1 1; -1 1; -1 1];
 X1_bound1 = [ 2.5 5; -5 -3; -5 -4];
-X1_bound2 = [ 2.5 5;  4  5; 2.5 5];
+X1_bound2 = [ 3.5 5;  3.5 5; -2 2];
 X1_bound3 = [-5 -4;   4  5; 2.5 5];
 
 number_subsystems = 2000;
-num_neighbors     = 1;
 
 T   = 17;
 tau = 0.05;
@@ -33,7 +32,7 @@ B = blkdiag(1/j1, 1/j2, 1/j3);
 
 D = B;
 
-Matrix_D = repmat(D, 1, num_neighbors);
+Matrix_D = D;
 
 states    = initial.';
 statesdot = [];
@@ -51,12 +50,8 @@ for i = 1:T
 
     u(:, i) = 3 * (-100 + 200 * rand(3, 1));
 
-    tempArray = [];
-    for k = 1:num_neighbors
-        w = 0.08 * [-10 + 20*rand, -10 + 20*rand, -20 + 20*rand];
-        tempArray = vertcat(tempArray, w.');
-    end
-    Vector_W = vertcat(Vector_W, tempArray.');
+    w = 0.08 * [-10 + 20*rand, -10 + 20*rand, -20 + 20*rand];
+    Vector_W = vertcat(Vector_W, w);
 
     odeSystem = @(t, x) A*M.' + B*u(:, i) + Matrix_D * Vector_W(i, :).';
     tspan     = [(i-1)*tau, i*tau];
@@ -78,7 +73,7 @@ X1T = statesdot.' + (-0.5 + rand(3, T));
 
 N0T = N0T.';
 
-clear tau initial states statesdot x0 u X i k w tempArray odeSystem tspan options
+clear tau initial states statesdot x0 u X i w odeSystem tspan options
 
 pvar x_1 x_2 x_3
 x = [x_1; x_2; x_3];
@@ -182,15 +177,29 @@ fprintf('Per-subsystem memory  MU = %.2f MB\n', MU_bytes / 1e6);
 n_i = 3;
 Nn  = number_subsystems * n_i;
 
-connection = zeros(Nn, Nn);
-for i = 2:number_subsystems
-    connection((i-1)*n_i + 1 : i*n_i, 1:n_i) = 0.02 * eye(n_i);
-end
-
 x11 = barx11;
 x12 = barx21.' * P;
 x21 = x12.';
 x22 = P * barx22 * P;
+
+lam_fun = @(g) max(eig(g^2 * (number_subsystems - 1)^2 * x11 + x22));
+
+g_lo = 0; g_hi = 1;
+while lam_fun(g_hi) < 0, g_hi = 2 * g_hi; end
+for it = 1:60
+    g_mid = (g_lo + g_hi) / 2;
+    if lam_fun(g_mid) < 0, g_lo = g_mid; else, g_hi = g_mid; end
+end
+g_max = g_lo;
+
+scale         = 10^(floor(log10(g_max)) - 1);
+coupling_gain = floor(g_max / scale) * scale;
+
+fprintf('\nMaximal admissible coupling gain g_max = %.6f\n', g_max);
+fprintf('Selected coupling gain             g     = %.4f\n', coupling_gain);
+
+connection = kron(coupling_gain * (ones(number_subsystems) - eye(number_subsystems)), ...
+                  eye(n_i));
 
 X1A = kron(eye(number_subsystems), x11);
 X2A = kron(eye(number_subsystems), x12);
@@ -211,7 +220,7 @@ disp(border); disp(['* ', msg, ' *']); disp(border);
 Dissipativity = [connection; eye(Nn)].' * Comp * [connection; eye(Nn)];
 
 disp('Checking the dissipativity (compositionality) condition:');
-eig_lmi = real(eig(Dissipativity));
+eig_lmi = real(eig((Dissipativity + Dissipativity.')/2));
 
 if all(eig_lmi < 0)
     fprintf('min eig = %.4e,  max eig = %.4e\n', min(eig_lmi), max(eig_lmi));
@@ -223,7 +232,7 @@ end
 border = repmat('-', 1, length(msg) + 4);
 disp(border); disp(['* ', msg, ' *']); disp(border);
 
-clear x prog X1A X2A X3A X4A
+clear x prog X1A X2A X3A X4A Comp connection Dissipativity
 
 pvar x1 x2 x3
 var_x = [x1; x2; x3];
