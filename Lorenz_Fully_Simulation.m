@@ -70,7 +70,7 @@ S_i = @(x1, x2, x3) 4.6885.*x1.^2 - 1.2132.*x1.*x2 - 0.4946.*x1.*x3 ...
 eta_i = 98.2169;
 mu_i  = 100.6141;
 
-g_range = linspace(-20, 20, 60);
+g_range = linspace(-20, 20, 400);
 [g1, g2, g3] = meshgrid(g_range, g_range, g_range);
 
 V_eta = S_i(g1, g2, g3) - eta_i;
