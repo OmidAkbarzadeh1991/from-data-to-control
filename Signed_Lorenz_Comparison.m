@@ -10,7 +10,6 @@ rng(1)
 kappa = 0.001;
 T     = 15;
 tau   = 0.01;
-Nvals = [10 50 100 500 1000];
 n     = 3;
 
 X_bound = [-20 20; -20 20; -20 20];
@@ -110,6 +109,59 @@ x12 = barx21.' * P;
 x21 = x12.';
 x22 = P * barx22 * P;
 
+
+clear prog
+prog = sosprogram(x);
+[prog, l1] = sospolyvar(prog, Mon_Lagrangian, 'wscoeff');
+[prog, l2] = sospolyvar(prog, Mon_Lagrangian, 'wscoeff');
+[prog, l3] = sospolyvar(prog, Mon_Lagrangian, 'wscoeff');
+lam = [l1; l2; l3];
+[prog, PIsg]  = sospolyvar(prog, monomials(x, 0));
+[prog, musg]  = sospolyvar(prog, monomials(x, 0));
+[prog, invPs] = sospolymatrixvar(prog, monomials(x, 0), [n n], 'symmetric');
+[prog, Hs]    = sospolymatrixvar(prog, monomials(x, 0:1), [T n]);
+
+Gs = - epsilon * invPs ...
+     - ((X1T - D*W0T) * Hs) - (Hs.' * (X1T - D*W0T).') ...
+     - musg * (T * bar_varkappa * eye(n)) - PIsg * eye(n);
+Cond = [Gs, Hs.'; Hs, musg*eye(T)] - lam.' * b_x * eye(T + n);
+
+for ii = 1:length(lam), prog = sosineq(prog, lam(ii)); end
+prog = soseq(prog, N0T * Hs - Upsilon_x * invPs);
+prog = sosmatrixineq(prog, invPs - 1e-6 * eye(n), 'quadraticMineq');
+prog = sosmatrixineq(prog, Cond, 'quadraticMineq');
+prog = sosineq(prog, PIsg - 1e-6);
+prog = sosineq(prog, musg - 1e-6);
+prog = sossolve(prog, ops);
+PIsg = double(sosgetsol(prog, PIsg));
+Ps   = double(sosgetsol(prog, invPs))^(-1);
+
+clear prog
+prog = sosprogram(x);
+[prog, lp1] = sospolyvar(prog, Mon_Lagrangian, 'wscoeff');
+[prog, lp2] = sospolyvar(prog, Mon_Lagrangian, 'wscoeff');
+[prog, lp3] = sospolyvar(prog, Mon_Lagrangian, 'wscoeff');
+lamp = [lp1; lp2; lp3];
+[prog, phis] = sospolyvar(prog, monomials(x, 0));
+Cond1 = (x.' * Ps * x) - phis*(x_1^2 + x_2^2 + x_3^2) - lamp.' * b_x;
+for ii = 1:length(lamp), prog = sosineq(prog, lamp(ii)); end
+prog = sosineq(prog, Cond1);
+prog = sosineq(prog, phis);
+prog = sossolve(prog, ops);
+Phis = double(sosgetsol(prog, phis));
+
+fprintf('\n--- Small-gain synthesis ---\n');
+fprintf('PI_sg = %.4g, phi = %.4g, PI_sg*phi = %.4g\n', PIsg, Phis, PIsg*Phis);
+
+sg_fun = @(N) (N-1) .* (kappa^2 * (N-1)) ./ (PIsg * Phis) - epsilon;
+Nall   = 2:1000;
+Nstar  = Nall(find(sg_fun(Nall) > 0, 1, 'first'));
+if isempty(Nstar)
+    Nvals = [10 50 100 199 200 500 1000];
+else
+    Nvals = unique([10 50 100 199 200 Nstar-1 Nstar 500 1000]);
+end
+
 lmi_maxeig = NaN(size(Nvals));
 for idx = 1:numel(Nvals)
     N   = Nvals(idx);
@@ -131,89 +183,26 @@ sg_margin = NaN(size(Nvals));
 for idx = 1:numel(Nvals)
     N = Nvals(idx);
     arrayD = kappa * repmat(eye(3), 1, N-1);
-
-    rng(1)
-    initial = [2; 2; 2]; states = initial.'; statesdot = []; N0Tsg = [];
-    usg = []; Wsg = [];
-    for i = 1:T
-        x0  = initial;
-        M   = [x0(1), x0(2), x0(3), x0(1)*x0(3), x0(1)*x0(2)];
-        M_c = [x0(1), x0(2), x0(3), x0(1)*x0(3), x0(1)*x0(2), ...
-               x0(2)*x0(3), x0(2)^2, x0(1)^2, x0(3)^2];
-        usg(i, :) = 100 * (-1 + 2*rand(1, 3));
-        wrow      = 10/(N-1) * (-1 + 2*rand(1, 3*(N-1)));
-        Wsg(i, :) = wrow;
-        odeSystem = @(t, xx) A*M.' + B*usg(i, :).' + arrayD*wrow.';
-        [~, X]    = ode45(odeSystem, [(i-1)*tau, i*tau], x0);
-        initial   = X(end, :).';
-        states    = [states; initial.'];
-        statesdot = [statesdot; (A*M.' + B*usg(i, :).' + arrayD*wrow.').'];
-        N0Tsg     = [N0Tsg; M_c];
-    end
-    U0Tsg = usg.'; W0Tsg = Wsg.';
-    X1Tsg = statesdot.' + (-0.1 + 0.2*rand(3, T));
-    N0Tsg = N0Tsg.';
-
-    clear x prog
-    pvar x_1 x_2 x_3
-    x = [x_1; x_2; x_3];
-    prog = sosprogram(x);
-    b_x = [(x_1 - X_bound(1, 1)) * (X_bound(1, 2) - x_1);
-           (x_2 - X_bound(2, 1)) * (X_bound(2, 2) - x_2);
-           (x_3 - X_bound(3, 1)) * (X_bound(3, 2) - x_3)];
-    [prog, l1] = sospolyvar(prog, monomials(x, 0:2), 'wscoeff');
-    [prog, l2] = sospolyvar(prog, monomials(x, 0:2), 'wscoeff');
-    [prog, l3] = sospolyvar(prog, monomials(x, 0:2), 'wscoeff');
-    lam = [l1; l2; l3];
-    [prog, PIsg]  = sospolyvar(prog, monomials(x, 0));
-    [prog, musg]  = sospolyvar(prog, monomials(x, 0));
-    [prog, invPs] = sospolymatrixvar(prog, monomials(x, 0), [n n], 'symmetric');
-    [prog, Hs]    = sospolymatrixvar(prog, monomials(x, 0:1), [T n]);
-
-    Gs = - epsilon * invPs ...
-         - ((X1Tsg - arrayD*W0Tsg) * Hs) - (Hs.' * (X1Tsg - arrayD*W0Tsg).') ...
-         - musg * (T * bar_varkappa * eye(n)) - PIsg * eye(n);
-    Cond = [Gs, Hs.'; Hs, musg*eye(T)] - lam.' * b_x * eye(T + n);
-
-    for ii = 1:length(lam), prog = sosineq(prog, lam(ii)); end
-    prog = soseq(prog, N0Tsg * Hs - Upsilon_x * invPs);
-    prog = sosmatrixineq(prog, invPs - 1e-6 * eye(n), 'quadraticMineq');
-    prog = sosmatrixineq(prog, Cond, 'quadraticMineq');
-    prog = sosineq(prog, PIsg - 1e-6);
-    prog = sosineq(prog, musg - 1e-6);
-    prog = sossolve(prog, ops);
-    PIsg = double(sosgetsol(prog, PIsg));
-    Ps   = double(sosgetsol(prog, invPs))^(-1);
-
-    clear prog
-    prog = sosprogram(x);
-    [prog, lp1] = sospolyvar(prog, monomials(x, 0:2), 'wscoeff');
-    [prog, lp2] = sospolyvar(prog, monomials(x, 0:2), 'wscoeff');
-    [prog, lp3] = sospolyvar(prog, monomials(x, 0:2), 'wscoeff');
-    lamp = [lp1; lp2; lp3];
-    [prog, phis] = sospolyvar(prog, monomials(x, 0));
-    Cond1 = (x.' * Ps * x) - phis*(x_1^2 + x_2^2 + x_3^2) - lamp.' * b_x;
-    for ii = 1:length(lamp), prog = sosineq(prog, lamp(ii)); end
-    prog = sosineq(prog, Cond1);
-    prog = sosineq(prog, phis);
-    prog = sossolve(prog, ops);
-    Phis = double(sosgetsol(prog, phis));
-    fprintf('N = %4d: PI_sg = %.4g, phi = %.4g, PI*phi = %.4g\n', ...
-            N, PIsg, Phis, PIsg*Phis);
-
-    Delta = (1/PIsg) * (1/Phis) * norm(arrayD)^2;
-    Comp  = (ones(N) - eye(N)) * Delta;
+    Delta  = (1/PIsg) * (1/Phis) * norm(arrayD)^2;
+    Comp   = (ones(N) - eye(N)) * Delta;
     Composition    = ones(1, N) * (Comp - diag(repmat(epsilon, 1, N)));
     sg_margin(idx) = max(Composition);
 end
 
 fprintf('\nkappa = %g, epsilon = %g\n', kappa, epsilon);
-fprintf('%8s | %32s | %32s\n', 'N', 'dissipativity LMI: max eig', ...
-        'small-gain (23b): max margin');
-fprintf('%8s | %32s | %32s\n', '', '(<= 0 means the LMI holds)', ...
-        '(< 0 means (23b) holds)');
+fprintf('%8s | %28s | %28s\n', 'N', 'dissipativity LMI: max eig', ...
+        'small-gain: max margin');
+fprintf('%8s | %28s | %28s\n', '', '(<= 0: condition holds)', ...
+        '(< 0: condition holds)');
 for idx = 1:numel(Nvals)
-    fprintf('%8d | %32.4e | %32.4e\n', Nvals(idx), lmi_maxeig(idx), ...
+    fprintf('%8d | %28.4f | %28.4f\n', Nvals(idx), lmi_maxeig(idx), ...
             sg_margin(idx));
 end
+if isempty(Nstar)
+    fprintf('\nSmall-gain condition holds for all N <= 1000.\n');
+else
+    fprintf('\nSmall-gain condition holds for all N <= %d and is violated for all N >= %d.\n', ...
+            Nstar - 1, Nstar);
+end
+fprintf('Dissipativity LMI holds for all listed N: %d\n', all(lmi_maxeig <= 0));
 toc
