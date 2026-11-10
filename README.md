@@ -20,6 +20,10 @@ From a **single noisy input–state trajectory** of one representative subsystem
 Our simulations were executed in **MATLAB R2023b** on a **MacBook M2** with **32 GB RAM**.
 The **RT** and **MU** values reported in the paper refer only to the synthesis scripts (`*_Network.m`). In contrast, the network simulation scripts (`*_Simulation.m`) for generating the corresponding figures may take **considerably longer** to finish, depending on the number of subsystems and the available computational resources.
 
+> **Note** The simulation scripts (`*_Simulation.m`) simulate the full network `num_runs = 100` times, each time drawing the initial states of all subsystems from the initial set, and plot the trajectory of one subsystem from each run. With `control_on = 1` they produce the closed-loop figures; for the open-loop figures, set `control_on = 0`.
+
+> **Note** In `Signed_Lorenz_Comparison.m`, the dissipativity and small-gain certificates are synthesized from the same single input-state trajectory, and the two compositionality conditions are then evaluated for each network size `N`.
+
 > **Note** The reported **running times (RT)** and **memory usage (MU)** correspond to the time and memory needed to collect the data and solve the SOS program for the CSC and local controller of one subsystem (the first SOS step of **Algorithm 1** in the paper); they are measured before the level-set program runs and before any network-level matrix is formed.
 >
 > **Note on memory units**
